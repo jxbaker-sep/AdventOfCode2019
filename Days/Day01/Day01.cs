@@ -14,28 +14,23 @@ public class Day01 : AdventOfCode<long, IReadOnlyList<long>>
         .Lines().Select(line => Convert.ToInt64(line)).ToList();
 
     // [TestCase(Input.Example, 24000)]
-    [TestCase(Input.File, 513)]
+    [TestCase(Input.File, 0)]
     public override long Part1(IReadOnlyList<long> input)
     {
-        return input.Sum();
+        return input.Select(it => it / 3 - 2).Sum();
     }
 
     // [TestCase(Input.Example, 45000)]
-    [TestCase(Input.File, 287)]
+    [TestCase(Input.File, 0)]
     public override long Part2(IReadOnlyList<long> input)
     {
-        var current = 0L;
-        var seen = new HashSet<long>();
-        while (true)
-        {
-            foreach (var item in input)
-            {
-                current += item;
-                if (!seen.Add(current))
-                {
-                    return current;
-                }
-            }
-        }
+        return input.Select(ComputeMass).Sum();
+    }
+
+    private long ComputeMass(long input)
+    {
+        var result = Math.Max(input / 3 - 2, 0);
+        if (result > 0) return result + ComputeMass(result);
+        return result;
     }
 }
