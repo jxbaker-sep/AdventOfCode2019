@@ -136,16 +136,10 @@ public static class EnumerableExtensions
         return new List<T> { item };
     }
 
-    public static Dictionary<TKey, List<T>> GroupToDictionary<T, TKey>(this IEnumerable<T> input, Func<T, TKey> keyFunc)
+    public static Dictionary<TKey, List<TValue>> ToDictionaryOfLists<T, TKey, TValue>(this IEnumerable<T> input, Func<T, TKey> keyFunc, Func<T, TValue> valueFunc)
         where TKey : notnull
     {
-        return input.GroupBy(keyFunc).ToDictionary(it => it.Key, it => it.ToList());
-    }
-
-    public static Dictionary<T, List<T>> GroupToDictionary<T>(this IEnumerable<T> input)
-        where T : notnull
-    {
-        return input.GroupToDictionary(it => it);
+        return input.GroupBy(keyFunc).ToDictionary(it => it.Key, it => it.Select(it => valueFunc(it)).ToList());
     }
 
     public static T Mode<T>(this IEnumerable<T> self)
@@ -308,6 +302,26 @@ public static class EnumerableExtensions
         {
             var list2 = new List<TValue> { item };
             self[key] = list2;
+        }
+    }
+
+    public static IEnumerable<List<T>> Permute<T>(this IReadOnlyList<T> self)
+    {
+        if (self.Count == 0)
+        {
+            yield return new List<T>();
+            yield break;
+        }
+        var x = self[0];
+        var copy = self.Skip(1).ToList();
+        foreach(var subpermutation in Permute(copy))
+        {
+            foreach(var insertIndex in Enumerable.Range(0, subpermutation.Count + 1))
+            {
+                var copy2 = subpermutation.ToList();
+                copy2.Insert(insertIndex, x);
+                yield return copy2;
+            }
         }
     }
 }

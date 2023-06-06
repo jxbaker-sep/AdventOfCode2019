@@ -14,14 +14,14 @@ public class Day01 : AdventOfCode<long, IReadOnlyList<long>>
         .Lines().Select(line => Convert.ToInt64(line)).ToList();
 
     // [TestCase(Input.Example, 24000)]
-    [TestCase(Input.File, 0)]
+    [TestCase(Input.File, 3235550)]
     public override long Part1(IReadOnlyList<long> input)
     {
         return input.Select(it => it / 3 - 2).Sum();
     }
 
     // [TestCase(Input.Example, 45000)]
-    [TestCase(Input.File, 0)]
+    [TestCase(Input.File, 4850462)]
     public override long Part2(IReadOnlyList<long> input)
     {
         return input.Select(ComputeMass).Sum();

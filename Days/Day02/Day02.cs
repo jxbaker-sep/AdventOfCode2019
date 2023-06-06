@@ -14,13 +14,15 @@ public class Day02 : AdventOfCode<long, IReadOnlyList<long>>
         .Lines().Single().Split(",").Select(it => Convert.ToInt64(it)).ToList();
 
     // [TestCase(Input.Example, 24000)]
-    [TestCase(Input.File, 9706670)] // 1 - wrong
+    [TestCase(Input.File, 9706670)]
     public override long Part1(IReadOnlyList<long> input)
     {
         var program = input.ToList();
         program[1] = 12;
         program[2] = 2;
-        return RunOpcodeProgram(program);
+        var comp = new IntcodeComputer(program);
+        comp.Run();
+        return comp.ReadOnlyMemory[0];
     }
 
     // [TestCase(Input.Example, 45000)]
@@ -34,28 +36,12 @@ public class Day02 : AdventOfCode<long, IReadOnlyList<long>>
                 var program = input.ToList();
                 program[1] = noun;
                 program[2] = verb;
-                var result = RunOpcodeProgram(program);
+                var comp = new IntcodeComputer(program);
+                comp.Run();
+                var result = comp.ReadOnlyMemory[0];
                 if (result == 19690720) return 100 * noun + verb;
             }
         }
         throw new ApplicationException();
-    }
-
-    private long RunOpcodeProgram(IReadOnlyList<long> input)
-    {
-        var program = input.ToList();
-        var pc = 0;
-
-        while (true)
-        {
-            switch (program[pc])
-            {
-                case 99: return program[0];
-                case 1: program[(int)program[pc + 3]] = program[(int)program[pc + 1]] + program[(int)program[pc + 2]]; break;
-                case 2: program[(int)program[pc + 3]] = program[(int)program[pc + 1]] * program[(int)program[pc + 2]]; break;
-                default: throw new ApplicationException($"Encountered opcode {program[pc]} at position {pc}");
-            }
-            pc += 4;
-        }
     }
 }
