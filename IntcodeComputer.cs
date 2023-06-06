@@ -44,17 +44,17 @@ public class IntcodeComputer
             {
                 case 99: return IntcodeResult.HALT;
                 case 1: 
-                    Memory[(int)Memory[PC + 3]] = Access(parameterMode1, Memory[PC + 1]) + Access(parameterMode2, Memory[PC + 2]);
+                    Write(PC + 3, Access(parameterMode1, Memory[PC + 1]) + Access(parameterMode2, Memory[PC + 2]));
                     PC += 4;
                     break;
                 case 2: 
-                    Memory[(int)Memory[PC + 3]] = Access(parameterMode1, Memory[PC + 1]) * Access(parameterMode2, Memory[PC + 2]);
+                    Write(PC + 3, Access(parameterMode1, Memory[PC + 1]) * Access(parameterMode2, Memory[PC + 2]));
                     PC += 4;
                     break;
                 case 3: // INPUT
                     if (Input.TryDequeue(out var input))
                     {
-                        Memory[(int)Memory[PC + 1]] = input;
+                        Write(PC + 1, input);
                         PC += 2;
                     }
                     else
@@ -78,17 +78,22 @@ public class IntcodeComputer
                     else PC += 3;
                     break;
                 case 7: // LESS THAN
-                    Memory[(int)Memory[PC + 3]] = Access(parameterMode1, Memory[PC + 1]) < Access(parameterMode2, Memory[PC + 2]) ? 1 : 0;
+                    Write(PC + 3, Access(parameterMode1, Memory[PC + 1]) < Access(parameterMode2, Memory[PC + 2]) ? 1 : 0);
                     PC += 4;
                     break;
                 case 8: // EQUAL
-                    Memory[(int)Memory[PC + 3]] = Access(parameterMode1, Memory[PC + 1]) == Access(parameterMode2, Memory[PC + 2]) ? 1 : 0;
+                    Write(PC + 3, Access(parameterMode1, Memory[PC + 1]) == Access(parameterMode2, Memory[PC + 2]) ? 1 : 0);
                     PC += 4;
                     break;
                 default: throw new ApplicationException($"Encountered opcode {Memory[PC]} at position {PC}");
             }
         }
         throw new ApplicationException();
+    }
+
+    private void Write(long writePC, long value)
+    {
+        Memory[(int)Memory[(int)writePC]] = value;
     }
 
     private long Access(long parameterMode, long value)
