@@ -10,10 +10,11 @@ public class IntcodeComputer
     public IReadOnlyList<long> ReadOnlyMemory => Memory;
 
     private int PC = 0;
+    private int RelativeBase = 0;
     public long Output {get; private set;}
     private readonly Queue<long> Input = new();
     
-    public IntcodeComputer(IReadOnlyList<long> initial)
+    public IntcodeComputer(IEnumerable<long> initial)
     {
         Memory = initial.ToList();
     }
@@ -33,6 +34,27 @@ public class IntcodeComputer
         }
     }
 
+    public IntcodeResult RunToOutputOrHalt()
+    {
+        while (true)
+        {
+            var x = Run();
+            if (x == IntcodeResult.INPUT) throw new ApplicationException("RunToOutputOrHalt() called but program needs input");
+            return x;
+        }
+    }
+
+    public long RunToOutput()
+    {
+        while (true)
+        {
+            var x = Run();
+            if (x == IntcodeResult.INPUT) throw new ApplicationException("RunToOutput() called but program needs input");
+            if (x == IntcodeResult.HALT) throw new ApplicationException("RunToOutput() called but program halted");
+            return Output;
+        }
+    }
+
     public IntcodeResult Run()
     {
         var startPC = PC;
@@ -40,21 +62,22 @@ public class IntcodeComputer
         {
             var parameterMode1 = (Memory[PC] / 100) % 10;
             var parameterMode2 = (Memory[PC] / 1000) % 10;
+            var parameterMode3 = (Memory[PC] / 10000) % 10;
             switch (Memory[PC] % 100)
             {
                 case 99: return IntcodeResult.HALT;
                 case 1: 
-                    Write(PC + 3, Access(parameterMode1, Memory[PC + 1]) + Access(parameterMode2, Memory[PC + 2]));
+                    Write(parameterMode3, PC + 3, Read(parameterMode1, PC + 1) + Read(parameterMode2, PC + 2));
                     PC += 4;
                     break;
                 case 2: 
-                    Write(PC + 3, Access(parameterMode1, Memory[PC + 1]) * Access(parameterMode2, Memory[PC + 2]));
+                    Write(parameterMode3, PC + 3, Read(parameterMode1, PC + 1) * Read(parameterMode2, PC + 2));
                     PC += 4;
                     break;
                 case 3: // INPUT
                     if (Input.TryDequeue(out var input))
                     {
-                        Write(PC + 1, input);
+                        Write(parameterMode1, PC + 1, input);
                         PC += 2;
                     }
                     else
@@ -64,26 +87,30 @@ public class IntcodeComputer
                     }
                     break;
                 case 4:
-                    Output = Access(parameterMode1, Memory[PC + 1]);
+                    Output = Read(parameterMode1, PC + 1);
                     PC += 2;
                     return IntcodeResult.OUTPUT;
                 case 5: // JUMP IF TRUE
-                    var result = Access(parameterMode1, Memory[PC + 1]);
-                    if (result != 0) PC = (int)Access(parameterMode2, Memory[PC + 2]);
+                    var result = Read(parameterMode1, PC + 1);
+                    if (result != 0) PC = (int)Read(parameterMode2, PC + 2);
                     else PC += 3;
                     break;
                 case 6: // JUMP IF FALSE
-                    var result2 = Access(parameterMode1, Memory[PC + 1]);
-                    if (result2 == 0) PC = (int)Access(parameterMode2, Memory[PC + 2]);
+                    var result2 = Read(parameterMode1, PC + 1);
+                    if (result2 == 0) PC = (int)Read(parameterMode2, PC + 2);
                     else PC += 3;
                     break;
                 case 7: // LESS THAN
-                    Write(PC + 3, Access(parameterMode1, Memory[PC + 1]) < Access(parameterMode2, Memory[PC + 2]) ? 1 : 0);
+                    Write(parameterMode3, PC + 3, Read(parameterMode1, PC + 1) < Read(parameterMode2, PC + 2) ? 1 : 0);
                     PC += 4;
                     break;
                 case 8: // EQUAL
-                    Write(PC + 3, Access(parameterMode1, Memory[PC + 1]) == Access(parameterMode2, Memory[PC + 2]) ? 1 : 0);
+                    Write(parameterMode3, PC + 3, Read(parameterMode1, PC + 1) == Read(parameterMode2, PC + 2) ? 1 : 0);
                     PC += 4;
+                    break;
+                case 9: // ADJUST RELATIVE BASE
+                    RelativeBase += (int)Read(parameterMode1, PC + 1);
+                    PC += 2;
                     break;
                 default: throw new ApplicationException($"Encountered opcode {Memory[PC]} at position {PC}");
             }
@@ -91,15 +118,28 @@ public class IntcodeComputer
         throw new ApplicationException();
     }
 
-    private void Write(long writePC, long value)
+    private void Write(long parameterMode, long writePC, long value)
     {
-        Memory[(int)Memory[(int)writePC]] = value;
+        Ensure(writePC);
+        Ensure(Memory[(int)writePC] + (parameterMode == 2 ? RelativeBase : 0));
+        Memory[(int)Memory[(int)writePC] + (parameterMode == 2 ? RelativeBase : 0)] = value;
     }
 
-    private long Access(long parameterMode, long value)
+    private long Read(long parameterMode, long readPC)
     {
-        if (parameterMode == 1) return value;
-        return Memory[(int)value];
+        Ensure(readPC);
+        var readAddress = Memory[(int)readPC];
+        if (parameterMode == 1) return readAddress;
+        Ensure(readAddress + (parameterMode == 2 ? RelativeBase : 0));
+        return Memory[(int)readAddress + (parameterMode == 2 ? RelativeBase : 0)];
+    }
+
+    private void Ensure(long position)
+    {
+        if (position >= Memory.Count)
+        {
+            Memory.AddRange(Enumerable.Repeat(0L, (int)(position - Memory.Count + 1)));
+        }
     }
 }
 

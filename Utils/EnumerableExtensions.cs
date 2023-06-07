@@ -324,4 +324,38 @@ public static class EnumerableExtensions
             }
         }
     }
+
+    public static void Print<T>(this IReadOnlyDictionary<Position, T> self, Func<T, char> translate, char otherwise = ' ')
+    {
+        var ps = self.Keys;
+        var minX = ps.Select(it => it.X).Min();
+        var maxX = ps.Select(it => it.X).Max();
+        var minY = ps.Select(it => it.Y).Min();
+        var maxY = ps.Select(it => it.Y).Max();
+        for(var y = minY; y <= maxY; y++)
+        {
+            Console.WriteLine();
+            for(var x = minX; x <= maxX; x++)
+            {
+                Console.Write(self.TryGetValue(new(y, x), out var temp) ? translate(temp) : otherwise);
+            }   
+        }
+    }
+
+    public static void Print<T>(this IReadOnlySet<Position> self, char whenPresent, char otherwise = ' ')
+    {
+        var ps = self;
+        var minX = ps.Select(it => it.X).Min();
+        var maxX = ps.Select(it => it.X).Max();
+        var minY = ps.Select(it => it.Y).Min();
+        var maxY = ps.Select(it => it.Y).Max();
+        for(var y = minY; y <= maxY; y++)
+        {
+            Console.WriteLine();
+            for(var x = minX; x <= maxX; x++)
+            {
+                Console.Write(self.Contains(new(y, x)) ? whenPresent : otherwise);
+            }   
+        }
+    }
 }
