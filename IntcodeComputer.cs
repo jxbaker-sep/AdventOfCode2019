@@ -24,6 +24,11 @@ public class IntcodeComputer
         Input.Enqueue(value);
     }
 
+    public void ProvideInput(IEnumerable<long> values)
+    {
+        foreach (var value in values) Input.Enqueue(value);
+    }
+
     public void RunToHalt()
     {
         while (true)
@@ -36,12 +41,17 @@ public class IntcodeComputer
 
     public IntcodeResult RunToOutputOrHalt()
     {
-        while (true)
-        {
-            var x = Run();
-            if (x == IntcodeResult.INPUT) throw new ApplicationException("RunToOutputOrHalt() called but program needs input");
-            return x;
-        }
+        var x = Run();
+        if (x == IntcodeResult.INPUT) throw new ApplicationException("RunToOutputOrHalt() called but program needs input");
+        return x;
+    }
+
+    public bool TryRunToOutputOrHalt(out long output)
+    {
+        var x = Run();
+        if (x == IntcodeResult.INPUT) throw new ApplicationException("RunToOutputOrHalt() called but program needs input");
+        output = Output;
+        return x == IntcodeResult.OUTPUT;
     }
 
     public long RunToOutput()

@@ -56,7 +56,7 @@ public class Day11 : AdventOfCode<long, IReadOnlyList<long>>
             p += v;
         }
 
-        d.Print(c => c == White ? '█' : ' ', ' ');
+        d.Draw(c => c == White ? '█' : ' ', ' ');
 
         return 0;
     }

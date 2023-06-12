@@ -325,8 +325,9 @@ public static class EnumerableExtensions
         }
     }
 
-    public static void Print<T>(this IReadOnlyDictionary<Position, T> self, Func<T, char> translate, char otherwise = ' ')
+    public static void Draw<T>(this IReadOnlyDictionary<Position, T> self, Func<T, char> translate, char otherwise = ' ')
     {
+        if (self.Count == 0) return;
         var ps = self.Keys;
         var minX = ps.Select(it => it.X).Min();
         var maxX = ps.Select(it => it.X).Max();
@@ -340,6 +341,7 @@ public static class EnumerableExtensions
                 Console.Write(self.TryGetValue(new(y, x), out var temp) ? translate(temp) : otherwise);
             }   
         }
+        Console.WriteLine();
     }
 
     public static void Print<T>(this IReadOnlySet<Position> self, char whenPresent, char otherwise = ' ')
