@@ -22,23 +22,24 @@ public class Day15 : AdventOfCode<long, IReadOnlyList<long>>
     [TestCase(Input.File, 380)]
     public override long Part1(IReadOnlyList<long> program)
     {
-        var unexplored = new HashSet<Position>();
+        var unexplored = new HashSet<Position>(Position.Zero.OrthoganalNeighbors());
 
-        var explored = new Dictionary<Position, long>();
+        var explored = new Dictionary<Position, long>{ { Position.Zero, Open } };
         var c = new IntcodeComputer(program);
 
         var current = Position.Zero;
         var proposed = Position.Zero + Vector.North;
         var steps = new Queue<Position>();
         c.ProvideInput(DirectionTo(current, proposed));
-        while (true)
+        // var cc = 0;
+        while (unexplored.Any())
         {
             var x = c.Run();
             if (x == IntcodeResult.HALT) throw new ApplicationException();
             if (x == IntcodeResult.OUTPUT)
             {
                 explored[proposed] = c.Output;
-                // Console.WriteLine("\n\n========================\n");
+                unexplored.Remove(proposed);
                 
                 if (c.Output == Wall)
                 {
@@ -46,30 +47,35 @@ public class Day15 : AdventOfCode<long, IReadOnlyList<long>>
                 }
                 else if (c.Output == OxygenSystem)
                 {
-                    Console.WriteLine($" Part 2 = {Floodfill(proposed, explored)}");
-                    return DirectionsTo(proposed, Position.Zero, explored).Count;
+                    current = proposed;
+                    var unexploredNeighbors = current.OrthoganalNeighbors().Except(explored.Keys).ToList();
+                    foreach(var item in unexploredNeighbors) unexplored.Add(item);
                 }
                 else
                 {
                     current = proposed;
+                    var unexploredNeighbors = current.OrthoganalNeighbors().Except(explored.Keys).ToList();
+                    foreach(var item in unexploredNeighbors) unexplored.Add(item);
                 }
-                // Draw(explored.Keys.Append(current).Distinct().ToDictionary(it => it, it => it == current ? 123L : explored[it]));
+                // if ((cc++) % 100 == 0)
+                // {
+                //     Console.WriteLine("\n\n========================\n");
+                //     Draw(explored.Keys.Append(current).Distinct().ToDictionary(it => it, it => it == current ? 123L : explored[it]));
+
+                // }
                 continue;
             }
             // INPUT
             if (steps.Count == 0)
             {
                 var unexploredNeighbors = current.OrthoganalNeighbors().Except(explored.Keys).ToList();
-                foreach(var item in unexploredNeighbors) unexplored.Add(item);
                 if (unexploredNeighbors.FirstOrDefault() is {} firstUnexploredNeighbor)
                 {
-                    unexplored.Remove(firstUnexploredNeighbor);
                     steps.Enqueue(firstUnexploredNeighbor);
                 }
                 else
                 {
                     var destination = unexplored.FirstOrDefault() ?? throw new ApplicationException();
-                    unexplored.Remove(destination);
                     var directions = DirectionsTo(current, destination, explored);
                     foreach(var direction in directions) steps.Enqueue(direction);
                 }
@@ -79,7 +85,9 @@ public class Day15 : AdventOfCode<long, IReadOnlyList<long>>
             proposed = step;
         }
 
-        throw new ApplicationException();
+        var oxy = explored.Single(it => it.Value == OxygenSystem).Key;
+        Console.WriteLine($" Part 2 = {Floodfill(oxy, explored)}");
+        return DirectionsTo(oxy, Position.Zero, explored).Count;
     }
 
     private long Floodfill(Position proposed, IReadOnlyDictionary<Position, long> explored)
@@ -89,8 +97,8 @@ public class Day15 : AdventOfCode<long, IReadOnlyList<long>>
 
         while (true)
         {
-            var openAdjacent = explored.Where(it => it.Value == OxygenSystem)
-                .SelectMany(it => it.Key.OrthoganalNeighbors().Where(nb => explored[nb] == Open))
+            var openAdjacent = temp.Where(it => it.Value == OxygenSystem)
+                .SelectMany(oxyCell => oxyCell.Key.OrthoganalNeighbors().Where(nb => temp[nb] == Open))
                 .ToList();
             if (!openAdjacent.Any()) return count;
             count += 1;
@@ -104,7 +112,7 @@ public class Day15 : AdventOfCode<long, IReadOnlyList<long>>
 
     private void Draw(Dictionary<Position, long> explored)
     {
-        explored.Draw(it => it switch{ Wall => '#', Open => '.', 123 => '@', _ => throw new ApplicationException() }, '?');
+        explored.Draw(it => it switch{ Wall => '#', Open => '.', 123 => '@', OxygenSystem => 'O', _ => throw new ApplicationException() }, '?');
     }
 
     [TestCase(Input.File, 0)]
